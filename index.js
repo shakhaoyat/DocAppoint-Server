@@ -1,8 +1,12 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config();
+
 const app = express()
+app.use(cors());
+app.use(express.json());
 const PORT = process.env.PORT || 5000
 const MONGODB_URI = process.env.MONGODB_URI
 
@@ -22,6 +26,25 @@ async function run() {
             // Send a ping to confirm a successful connection
             const db = client.db("docappoint");
             const doctorCollection = db.collection("doctors");
+            const appointmentCollection = db.collection("appointments");
+
+            app.post("/appointments", async (req, res) => {
+                  try {
+                        const appointment = req.body;
+
+                        const result = await appointmentCollection.insertOne(appointment);
+
+                        res.json({
+                              success: true,
+                              insertedId: result.insertedId,
+                        });
+                  } catch (error) {
+                        res.status(500).json({
+                              success: false,
+                              error: error.message,
+                        });
+                  }
+            });
 
 
             app.get("/all-appointments", async (req, res) => {
@@ -29,10 +52,10 @@ async function run() {
                   res.json(result);
             });
 
-            app.get("/all-appointments/:doctorid", async (req, res) => {
+            app.get("/all-appointments/:id", async (req, res) => {
                   // const id = req.params.doctorid;
-                  const { doctorid } = req.params;
-                  const query = { _id: new ObjectId(doctorid) };
+                  const { id } = req.params;
+                  const query = { _id: new ObjectId(id) };
                   const result = await doctorCollection.findOne(query);
                   res.json(result);
             });
