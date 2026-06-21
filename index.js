@@ -46,6 +46,23 @@ async function run() {
                   }
             });
 
+            // UPDATE appointment
+            app.put("/appointments/:id", async (req, res) => {
+                  try {
+                        const { id } = req.params;
+                        const updates = req.body;
+                        const result = await appointmentCollection.updateOne(
+                              { _id: new ObjectId(id) },
+                              { $set: updates }
+                        );
+                        res.json({ success: true, modifiedCount: result.modifiedCount });
+                  } catch (error) {
+                        res.status(500).json({ success: false, error: error.message });
+                  }
+            });
+
+            // DELETE appointment
+           
 
             app.get("/all-appointments", async (req, res) => {
                   const result = await doctorCollection.find().toArray();
