@@ -46,6 +46,15 @@ async function run() {
                   }
             });
 
+            app.get("/appointments", async (req, res) => {
+                  try {
+                        const result = await appointmentCollection.find().toArray();
+                        res.json(result);
+                  } catch (error) {
+                        res.status(500).json({ success: false, error: error.message });
+                  }
+            });
+
             // UPDATE appointment
             app.put("/appointments/:id", async (req, res) => {
                   try {
