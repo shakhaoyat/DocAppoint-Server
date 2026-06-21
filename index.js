@@ -62,7 +62,16 @@ async function run() {
             });
 
             // DELETE appointment
-           
+            app.delete("/appointments/:id", async (req, res) => {
+                  try {
+                        const { id } = req.params;
+                        const result = await appointmentCollection.deleteOne({ _id: new ObjectId(id) });
+                        res.json({ success: true, deletedCount: result.deletedCount });
+                  } catch (error) {
+                        res.status(500).json({ success: false, error: error.message });
+                  }
+            });
+
 
             app.get("/all-appointments", async (req, res) => {
                   const result = await doctorCollection.find().toArray();
