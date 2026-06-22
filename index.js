@@ -23,7 +23,7 @@ let doctorCollection;
 let appointmentCollection;
 
 async function connectDB() {
-      await client.connect();
+      // await client.connect();
       const db = client.db("docappoint");
       doctorCollection = db.collection("doctors");
       appointmentCollection = db.collection("appointments");
