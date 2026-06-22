@@ -4,11 +4,12 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config();
 
-const app = express()
+const app = express();
 app.use(cors());
 app.use(express.json());
-const PORT = process.env.PORT || 5000
-const MONGODB_URI = process.env.MONGODB_URI
+
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const client = new MongoClient(MONGODB_URI, {
       serverApi: {
@@ -18,99 +19,102 @@ const client = new MongoClient(MONGODB_URI, {
       }
 });
 
+let doctorCollection;
+let appointmentCollection;
 
-async function run() {
-      try {
-            // Connect the client to the server	(optional starting in v4.7)
-            await client.connect();
-            // Send a ping to confirm a successful connection
-            const db = client.db("docappoint");
-            const doctorCollection = db.collection("doctors");
-            const appointmentCollection = db.collection("appointments");
-
-            app.post("/appointments", async (req, res) => {
-                  try {
-                        const appointment = req.body;
-
-                        const result = await appointmentCollection.insertOne(appointment);
-
-                        res.json({
-                              success: true,
-                              insertedId: result.insertedId,
-                        });
-                  } catch (error) {
-                        res.status(500).json({
-                              success: false,
-                              error: error.message,
-                        });
-                  }
-            });
-
-            app.get("/appointments", async (req, res) => {
-                  try {
-                        const result = await appointmentCollection.find().toArray();
-                        res.json(result);
-                  } catch (error) {
-                        res.status(500).json({ success: false, error: error.message });
-                  }
-            });
-
-            // UPDATE appointment
-            app.put("/appointments/:id", async (req, res) => {
-                  try {
-                        const { id } = req.params;
-                        const updates = req.body;
-                        const result = await appointmentCollection.updateOne(
-                              { _id: new ObjectId(id) },
-                              { $set: updates }
-                        );
-                        res.json({ success: true, modifiedCount: result.modifiedCount });
-                  } catch (error) {
-                        res.status(500).json({ success: false, error: error.message });
-                  }
-            });
-
-            // DELETE appointment
-            app.delete("/appointments/:id", async (req, res) => {
-                  try {
-                        const { id } = req.params;
-                        const result = await appointmentCollection.deleteOne({ _id: new ObjectId(id) });
-                        res.json({ success: true, deletedCount: result.deletedCount });
-                  } catch (error) {
-                        res.status(500).json({ success: false, error: error.message });
-                  }
-            });
-
-
-            app.get("/all-appointments", async (req, res) => {
-                  const result = await doctorCollection.find().toArray();
-                  res.json(result);
-            });
-
-            app.get("/all-appointments/:id", async (req, res) => {
-                  // const id = req.params.doctorid;
-                  const { id } = req.params;
-                  const query = { _id: new ObjectId(id) };
-                  const result = await doctorCollection.findOne(query);
-                  res.json(result);
-            });
-
-            // await client.db("admin").command({ ping: 1 });
-            console.log("Pinged your deployment. You successfully connected to MongoDB!");
-      } finally {
-            // Ensures that the client will close when you finish/error
-            // await client.close();
-      }
+async function connectDB() {
+      await client.connect();
+      const db = client.db("docappoint");
+      doctorCollection = db.collection("doctors");
+      appointmentCollection = db.collection("appointments");
+      console.log("Connected to MongoDB");
 }
-run().catch(console.dir);
 
+connectDB().catch((err) => {
+      console.error("MongoDB connection failed:", err.message);
+      process.exit(1);
+});
 
+app.get("/", (req, res) => {
+      res.send("docappoint server is running");
+});
 
-app.get('/', (req, res) => {
-      res.send('Hello W docappoint!')
-})
+app.post("/appointments", async (req, res) => {
+      try {
+            const result = await appointmentCollection.insertOne(req.body);
+            console.log("Appointment created:", result.insertedId);
+            res.json({ success: true, insertedId: result.insertedId });
+      } catch (error) {
+            console.error("POST /appointments error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
+
+app.get("/appointments", async (req, res) => {
+      try {
+            const result = await appointmentCollection.find().toArray();
+            console.log(`GET /appointments — ${result.length} found`);
+            res.json(result);
+      } catch (error) {
+            console.error("GET /appointments error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
+
+app.put("/appointments/:id", async (req, res) => {
+      try {
+            const { id } = req.params;
+            const result = await appointmentCollection.updateOne(
+                  { _id: new ObjectId(id) },
+                  { $set: req.body }
+            );
+            console.log(`PUT /appointments/${id} — modified: ${result.modifiedCount}`);
+            res.json({ success: true, modifiedCount: result.modifiedCount });
+      } catch (error) {
+            console.error("PUT /appointments/:id error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
+
+app.delete("/appointments/:id", async (req, res) => {
+      try {
+            const { id } = req.params;
+            const result = await appointmentCollection.deleteOne({ _id: new ObjectId(id) });
+            console.log(`DELETE /appointments/${id} — deleted: ${result.deletedCount}`);
+            res.json({ success: true, deletedCount: result.deletedCount });
+      } catch (error) {
+            console.error("DELETE /appointments/:id error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
+
+app.get("/all-appointments", async (req, res) => {
+      try {
+            const result = await doctorCollection.find().toArray();
+            console.log(`GET /all-appointments — ${result.length} found`);
+            res.json(result);
+      } catch (error) {
+            console.error("GET /all-appointments error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
+
+app.get("/all-appointments/:id", async (req, res) => {
+      try {
+            const { id } = req.params;
+            const result = await doctorCollection.findOne({ _id: new ObjectId(id) });
+            if (!result) {
+                  console.warn(`GET /all-appointments/${id} — not found`);
+                  return res.status(404).json({ success: false, error: "Doctor not found" });
+            }
+            console.log(`GET /all-appointments/${id} — found: ${result.name}`);
+            res.json(result);
+      } catch (error) {
+            console.error("GET /all-appointments/:id error:", error.message);
+            res.status(500).json({ success: false, error: error.message });
+      }
+});
 
 app.listen(PORT, () => {
-      console.log(`Example app listening on PORT ${PORT}`)
-})
-
+      console.log(`Server running on port ${PORT}`);
+});
